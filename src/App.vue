@@ -69,6 +69,7 @@ export default {
           }
           return cellProperties
         },
+        readOnly: true,
         stretchH: 'all',
         width: 806,
         autoWrapRow: true,
