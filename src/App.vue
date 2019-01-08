@@ -43,7 +43,20 @@ export default {
       filter: {},
       hotSettings: {
         columns: [
-          { data: 'appID', type: 'text', renderer: linkRenderer },
+          {
+            data: 'appID',
+            type: 'text',
+            renderer: linkRenderer,
+            columnSorting: {
+              compareFunctionFactory: (sortOrder, columnMeta) => {
+                return function comparator (value, nextValue) {
+                  const a = value.name
+                  const b = nextValue.name
+                  return sortOrder === 'asc' ? a.localeCompare(b) : sortOrder === 'desc' ? b.localeCompare(a) : 0
+                }
+              }
+            }
+          },
           { data: 'year', type: 'numeric' },
           { data: 'opCosts', type: 'numeric' },
           { data: 'projectCosts', type: 'numeric' },
@@ -74,6 +87,11 @@ export default {
         manualColumnMove: false,
         contextMenu: false,
         columnSorting: {
+          sortEmptyCells: false,
+          initialConfig: {
+            column: 0,
+            sortOrder: 'asc'
+          },
           indicator: true
         }
       }
