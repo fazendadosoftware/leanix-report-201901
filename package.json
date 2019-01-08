@@ -1,6 +1,6 @@
 {
   "name": "leanix-report-201901",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "description": "LeanIX custom report build with Vue.js.",
   "author": "Paulo dos Santos <paulo@fazendadosoftware.com>",
   "private": true,
