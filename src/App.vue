@@ -34,6 +34,14 @@ export default {
           { data: 'projectCosts', type: 'numeric' },
           { data: 'totalCosts', type: 'numeric' }
         ],
+        cells: (row, col, prop) => {
+          const cellProperties = {}
+          if (prop === 'year') {
+            console.log(prop, col, row)
+            cellProperties.className = 'center-text'
+          }
+          return cellProperties
+        },
         stretchH: 'all',
         width: 806,
         autoWrapRow: true,
@@ -42,7 +50,7 @@ export default {
         manualRowResize: true,
         manualColumnResize: true,
         data: {},
-        colHeaders: [ 'Application Name', 'KJ', 'Betrieb', 'Project', 'Gesamt' ],
+        colHeaders: [ 'Applikation', 'KJ', 'Betrieb Kosten', 'Projekt Kosten', 'Gesamt Kosten' ],
         rowHeaders: false,
         hiddenColumns: {
           columns: [0],
@@ -120,6 +128,9 @@ export default {
 
 <style lang="stylus">
   @import './stylus/table-component'
+
+  .center-text
+    text-align center !important
 
   #app
     font-family: Helvetica Neue,Helvetica,Arial,sans-serif
