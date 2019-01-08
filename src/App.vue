@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <div class="actions-row"></div>
     <hot-table root="hotgrid" :settings="hotSettings" ref="hot" @click.native="handleClickEvent"/>
   </div>
 </template>
@@ -7,6 +8,18 @@
 <script>
 
 import { HotTable } from '@handsontable/vue'
+
+/*
+const getCostFragment = () => {
+  const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023]
+  const costTypes = ['project', 'op', 'total']
+  const costFragment = years
+    .map(year => `y${year}`).map(yearPrefix => costTypes.map(costType => `${yearPrefix}${costType}`))
+    .reduce((accumulator, yearPrefix) => Array.from([...accumulator, ...yearPrefix.map(year => `${year}Costs`)]), [])
+  console.log('costFrahment', costFragment)
+  return costFragment
+}
+*/
 
 const linkRenderer = (instance, td, row, col, prop, value, cellProperties) => {
   // const r = instance.getDataAtRow(row)
@@ -25,7 +38,9 @@ export default {
   },
   data () {
     return {
+      exportXLS: 0,
       dataset: {},
+      filter: {},
       hotSettings: {
         columns: [
           { data: 'appID', type: 'text', renderer: linkRenderer },
@@ -37,7 +52,6 @@ export default {
         cells: (row, col, prop) => {
           const cellProperties = {}
           if (prop === 'year') {
-            console.log(prop, col, row)
             cellProperties.className = 'center-text'
           }
           return cellProperties
@@ -66,6 +80,29 @@ export default {
     }
   },
   methods: {
+    createReportConfig () {
+      // const that = this
+      return {
+        allowTableView: false,
+        menuActions: {
+          showConfigure: false
+        },
+        facets: [
+          {
+            key: 'main',
+            fixedFactSheetType: 'Application',
+            defaultPageSize: 1,
+            facetFiltersChangedCallback: filter => {
+              this.filter = {
+                facetFilters: filter.facets,
+                fullTextSearch: filter.fullTextSearchTerm,
+                ids: filter.directHits.map(hit => hit.id)
+              }
+            }
+          }
+        ]
+      }
+    },
     handleClickEvent (evt) {
       const { target } = evt
       const factSheetURI = target.getAttribute('factsheet-uri')
@@ -74,18 +111,19 @@ export default {
       }
     },
     resizeTable () {
-      this.hotSettings.height = window.innerHeight - 50
+      this.hotSettings.height = window.innerHeight - 43
       this.hotSettings.width = window.innerWidth - 40 > 860 ? 860 : window.innerWidth - 40
     },
     getDataset () {
       this.$lx.showSpinner()
+      const variables = { filter: this.filter }
       const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023]
       const costTypes = ['project', 'op', 'total']
       const costFragment = years
         .map(year => `y${year}`).map(yearPrefix => costTypes.map(costType => `${yearPrefix}${costType}`))
         .reduce((accumulator, yearPrefix) => Array.from([...accumulator, ...yearPrefix.map(year => `${year}Costs`)]), [])
-      const query = `{op:allFactSheets(factSheetType: Application){edges{node{...on Application{id name ${costFragment}}}}}}`
-      this.$lx.executeGraphQL(query)
+      const query = `query($filter: FilterInput){op:allFactSheets(filter: $filter){edges{node{...on Application{id name ${costFragment}}}}}}`
+      this.$lx.executeGraphQL(query, variables)
         .then(res => res.op.edges
           .map(edge => edge.node)
           .reduce((accumulator, node) => {
@@ -107,14 +145,16 @@ export default {
         })
     }
   },
+  watch: {
+    filter (val) {
+      console.log('filter changed')
+      this.getDataset()
+    }
+  },
   mounted () {
     this.resizeTable()
     this.$nextTick(() => window.addEventListener('resize', this.resizeTable))
-    this.$lx.init()
-      .then(setup => {
-        this.$lx.ready({})
-      })
-    this.getDataset()
+    this.$lx.init().then(setup => this.$lx.ready(this.createReportConfig()))
   },
   beforeDestroy () {
     window.removeEventListener('resize', this.resizeTable)
@@ -142,5 +182,6 @@ export default {
     flex-flow column
     justify-content center
     align-items center
+    padding 10px
 
 </style>
