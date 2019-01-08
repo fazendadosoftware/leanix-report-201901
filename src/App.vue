@@ -70,6 +70,7 @@ export default {
       this.hotSettings.width = window.innerWidth - 40 > 860 ? 860 : window.innerWidth - 40
     },
     getDataset () {
+      this.$lx.showSpinner()
       const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023]
       const costTypes = ['project', 'op', 'total']
       const costFragment = years
@@ -93,7 +94,7 @@ export default {
           }, [])
         )
         .then(res => {
-          this.dataset = (res || []).reduce((accumulator, application) => { accumulator[application.id] = application; return application }, {})
+          this.$lx.hideSpinner()
           this.hotSettings.data = res
         })
     }
