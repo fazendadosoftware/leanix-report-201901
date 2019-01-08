@@ -1,47 +1,74 @@
 <template>
   <div id="app">
-    <!--<img class="logo" src="./assets/logo.svg">-->
-    <div class="table-container">
-      <table-component
-        :data="rawData"
-        :show-filter="false"
-        sort-by="songs"
-        sort-order="asc"
-        >
-        <table-column
-          v-for="(column, idx) in columns"
-          :header-class="column.headerClass"
-          :cell-class="column.class"
-          :key="idx"
-          :show="column.show"
-          :label="column.label"
-          :data-type="column.dataType"
-          :sortable="column.sortable"
-          :filterable="column.filterable"
-          :formatter="column.formatter"
-        />
-      </table-component>
-    </div>
+    <hot-table root="hotgrid" :settings="hotSettings" ref="hot" @click.native="handleClickEvent"/>
   </div>
 </template>
 
 <script>
 
+import { HotTable } from '@handsontable/vue'
+
+const linkRenderer = (instance, td, row, col, prop, value, cellProperties) => {
+  // const r = instance.getDataAtRow(row)
+  if (value === null) return
+  const uri = `/factsheet/Application/${value.id}`
+  // this.$lx.openRouterLink(uri)
+  td.innerHTML = `<a factsheet-uri="${uri}" class="factsheet-link" href="#">${value.name}</a>`
+  td.style = 'text-align: center'
+  return td
+}
+
 export default {
   name: 'App',
+  components: {
+    HotTable
+  },
   data () {
     return {
-      rawData: [],
-      columns: [
-        { show: 'name', label: 'Application Name', sortable: true, class: 'name-cell hoverable' },
-        { show: 'year', label: 'KJ', sortable: true, filterable: true, dataType: 'numeric', class: 'numeric-cell year hoverable' },
-        { show: 'opCosts', label: 'Betrieb', sortable: true, dataType: 'numeric', class: 'numeric-cell hoverable' },
-        { show: 'projectCosts', label: 'Projekt', sortable: true, dataType: 'numeric', class: 'numeric-cell hoverable' },
-        { show: 'totalCosts', label: 'Gesamt', sortable: true, dataType: 'numeric', class: 'numeric-cell hoverable' }
-      ]
+      dataset: {},
+      hotSettings: {
+        columns: [
+          { data: 'appID', type: 'text', renderer: linkRenderer },
+          { data: 'year', type: 'numeric' },
+          { data: 'opCosts', type: 'numeric' },
+          { data: 'projectCosts', type: 'numeric' },
+          { data: 'totalCosts', type: 'numeric' }
+        ],
+        stretchH: 'all',
+        width: 806,
+        autoWrapRow: true,
+        height: 487,
+        // maxRows: 22,
+        manualRowResize: true,
+        manualColumnResize: true,
+        data: {},
+        colHeaders: [ 'Application Name', 'KJ', 'Betrieb', 'Project', 'Gesamt' ],
+        rowHeaders: false,
+        hiddenColumns: {
+          columns: [0],
+          indicators: false
+        },
+        manualRowMove: false,
+        manualColumnMove: false,
+        contextMenu: false,
+        columnSorting: {
+          indicator: true
+        }
+      }
     }
   },
   methods: {
+    handleClickEvent (evt) {
+      const { target } = evt
+      const factSheetURI = target.getAttribute('factsheet-uri')
+      if (factSheetURI) {
+        this.$lx.openRouterLink(factSheetURI)
+      }
+    },
+    resizeTable () {
+      this.hotSettings.height = window.innerHeight - 50
+      this.hotSettings.width = window.innerWidth - 40 > 860 ? 860 : window.innerWidth - 40
+    },
     getDataset () {
       const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023]
       const costTypes = ['project', 'op', 'total']
@@ -60,26 +87,35 @@ export default {
                 .reduce((accumulator, key) => {
                   accumulator[key.replace(`y${year}`, '')] = node[key]
                   return accumulator
-                }, { id: node.id, name: node.name, year })
+                }, { id: node.id, name: node.name, appID: { id: node.id, name: node.name }, year })
               )
             return Array.from([...accumulator, ...keyedByYear])
           }, [])
         )
         .then(res => {
-          console.log('res', res)
-          this.rawData = res
+          this.dataset = (res || []).reduce((accumulator, application) => { accumulator[application.id] = application; return application }, {})
+          this.hotSettings.data = res
         })
     }
   },
   mounted () {
+    this.resizeTable()
+    this.$nextTick(() => window.addEventListener('resize', this.resizeTable))
     this.$lx.init()
       .then(setup => {
         this.$lx.ready({})
       })
     this.getDataset()
+  },
+  beforeDestroy () {
+    window.removeEventListener('resize', this.resizeTable)
   }
 }
 </script>
+
+<style>
+  @import 'handsontable/dist/handsontable.full.css';
+</style>
 
 <style lang="stylus">
   @import './stylus/table-component'
@@ -94,25 +130,5 @@ export default {
     flex-flow column
     justify-content center
     align-items center
-
-  .table-container
-    display flex
-    flex-flow column
-    max-width 85%
-
-  .name-cell
-    max-width 350px
-    white-space nowrap !important
-    overflow hidden
-    text-overflow ellipsis
-    text-align center
-    padding 0 20px !important
-
-  .numeric-cell
-    text-align right
-    min-width 150px
-  .year
-    min-width 100px
-    text-align center
 
 </style>
