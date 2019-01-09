@@ -14,8 +14,10 @@
   "dependencies": {
     "@handsontable/vue": "^3.1.0",
     "@leanix/reporting": "^0.2.2",
+    "file-saver": "^2.0.0",
     "handsontable": "^6.2.2",
-    "vue": "^2.5.2"
+    "vue": "^2.5.2",
+    "xlsx": "^0.14.1"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",
