@@ -1,12 +1,15 @@
 <template>
   <div id="app">
-    <div class="actions-row"></div>
+    <div class="actions-row">
+      <button @click="exportXLS">Export</button>
+    </div>
     <hot-table root="hotgrid" :settings="hotSettings" ref="hot" @click.native="handleClickEvent"/>
   </div>
 </template>
 
 <script>
-
+import XLSX from 'xlsx'
+import saveAs from 'file-saver'
 import { HotTable } from '@handsontable/vue'
 
 /*
@@ -38,8 +41,7 @@ export default {
   },
   data () {
     return {
-      exportXLS: 0,
-      dataset: {},
+      dataset: [],
       filter: {},
       hotSettings: {
         columns: [
@@ -130,7 +132,7 @@ export default {
       }
     },
     resizeTable () {
-      this.hotSettings.height = window.innerHeight - 43
+      this.hotSettings.height = window.innerHeight - 63
       this.hotSettings.width = window.innerWidth - 40 > 860 ? 860 : window.innerWidth - 40
     },
     getDataset () {
@@ -161,12 +163,31 @@ export default {
         .then(res => {
           this.$lx.hideSpinner()
           this.hotSettings.data = res
+          this.dataset = res.map(row => { delete row.appID; return row })
         })
+    },
+    exportXLS () {
+      /*
+      const { hotInstance } = this.$refs.hot
+      const header = hotInstance.getColHeader()
+      const data = hotInstance.getData()
+      */
+      const ws = XLSX.utils.json_to_sheet(this.dataset)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Applications')
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' })
+      /* generate a download */
+      function s2ab (s) {
+        var buf = new ArrayBuffer(s.length)
+        var view = new Uint8Array(buf)
+        for (var i = 0; i !== s.length; i++) view[i] = s.charCodeAt(i) & 0xFF
+        return buf
+      }
+      saveAs(new Blob([ s2ab(wbout) ], { type: 'application/octet-stream' }), 'exported.xlsx')
     }
   },
   watch: {
     filter (val) {
-      console.log('filter changed')
       this.getDataset()
     }
   },
@@ -201,6 +222,14 @@ export default {
     flex-flow column
     justify-content center
     align-items center
-    padding 10px
 
+  .actions-row
+    display flex
+    padding 0.5rem
+    width 100%
+    align-items flex-end
+    justify-content flex-start
+
+    > button
+      font-size 0.7rem
 </style>
